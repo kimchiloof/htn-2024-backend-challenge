@@ -13,11 +13,11 @@ const typeDefs = `#graphql
     }
 
     input ModifyData {
-        newName: String,
-        newCompany: String,
-        newEmail: String,
-        newPhone: String,
-        newSkills: [SkillInput]
+        name: String,
+        company: String,
+        email: String,
+        phone: String,
+        skills: [SkillInput]
     }
 
     input SkillInput {
