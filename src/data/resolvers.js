@@ -49,6 +49,10 @@ const resolvers = {
                 updateUserTransaction();
                 return getUserInfo(data.email || email);
             } catch (error) {
+                if (error && error.message.includes("UNIQUE constraint failed: users.email")) {
+                    console.error(`Email ${data.email} already exists for another user!`)
+                }
+                
                 console.error("Failed to update user:", error);
                 return null;
             }
