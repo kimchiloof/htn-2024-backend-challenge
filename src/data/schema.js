@@ -69,9 +69,9 @@ const typeDefs = `#graphql
     type Query {
         allUsers(limit: Int): [User]
         getUserInfo(email: String!): User
-        getSkillsFreq(filter: SkillFreqQuery!): [SkillFreq]
+        getSkillsFreq(limit: Int, filter: SkillFreqQuery!): [SkillFreq]
     
-        getUsers(name: String, company: String, email: String, phone: String, skills: [SkillQuery]): [User]
+        getUsers(limit: Int, name: String, company: String, email: String, phone: String, skills: [SkillQuery]): [User]
     }
     
     type Mutation {

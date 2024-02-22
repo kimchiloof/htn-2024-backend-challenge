@@ -14,21 +14,105 @@ const resolvers = {
         },
 
         // Gets all skills with a frequency between min_freq and max_freq
-        getSkillsFreq: (_, { filter }) => {
+        getSkillsFreq: (_, { limit, filter }) => {
             const { min_freq, max_freq } = filter;
-            const skills = db.prepare(`
+            let query = `
                 SELECT skills.skill, COUNT(user_skills.user_id) AS freq
                 FROM user_skills
                 JOIN skills ON skills.id = user_skills.skill_id
                 GROUP BY user_skills.skill_id
                 HAVING freq BETWEEN ? AND ?
-            `).all(min_freq, max_freq);
+            `
+            if (limit) 
+                query += ` LIMIT ?`;
+            
+            const skills = limit
+                ? db.prepare(query).all(
+                    min_freq || Number.MIN_SAFE_INTEGER,
+                    max_freq || Number.MAX_SAFE_INTEGER,
+                    limit)
+                : db.prepare(query).all(
+                    min_freq || Number.MIN_SAFE_INTEGER,
+                    max_freq || Number.MAX_SAFE_INTEGER);
             
             return skills.map(skill => ({
                 skill: skill.skill,
                 freq: skill.freq
             }));
         },
+
+        // Gets all users who match all given filters
+        getUsers: (_, { limit, name, company, email, phone, skills }) => {
+            let query = `SELECT * FROM users WHERE true`
+            let params = [];
+            
+            if (name) {
+                query += ` AND name = ?`;
+                params.push(name);
+            }
+            if (company) {
+                query += ` AND company = ?`;
+                params.push(company);
+            }
+            if (email) {
+                query += ` AND email = ?`;
+                params.push(email);
+            }
+            if (phone) {
+                query += ` AND phone = ?`;
+                params.push(phone);
+            }
+
+            let users = db.prepare(query).all(params);
+            
+            // Skills
+            if (skills && skills.length > 0) {
+                users = users.filter(user => {
+                    return skills.every(skillQuery => {
+                        const skillCheckQuery = `
+                            SELECT COUNT(*) AS match
+                            FROM user_skills
+                            JOIN skills ON user_skills.skill_id = skills.id
+                            WHERE user_skills.user_id = ? AND skills.skill = ? AND user_skills.rating >= ? AND user_skills.rating <= ?
+                        `;
+                        
+                        const skillCheckParams = [
+                            user.id,
+                            skillQuery.skill,
+                            skillQuery.min_rating || Number.MIN_SAFE_INTEGER,
+                            skillQuery.max_rating || Number.MAX_SAFE_INTEGER
+                        ];
+                        
+                        const result = db.prepare(skillCheckQuery).get(skillCheckParams);
+                        return result.match > 0;
+                    });
+                });
+            }
+
+            users = users.map(user => {
+                const skillsQuery = `
+                    SELECT skills.skill, user_skills.rating
+                    FROM user_skills
+                    JOIN skills ON user_skills.skill_id = skills.id
+                    WHERE user_skills.user_id = ?
+                `;
+                
+                const userSkills = db.prepare(skillsQuery).all(user.id);
+                return { ...user, skills: userSkills };
+            });
+            
+            if (limit) {
+                users = users.slice(0, limit);
+            }
+            
+            return users.map(user => ({
+                name: user.name,
+                company: user.company,
+                email: user.email,
+                phone: user.phone,
+                skills: user.skills
+            }));
+        }
     },
     
     Mutation: {
