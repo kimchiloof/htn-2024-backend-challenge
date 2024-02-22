@@ -4,17 +4,17 @@ import {getSkillByName, getSkillsByUserId, getUserByEmail} from "./data-utils.js
 const resolvers = {
     Query: {
         // Get all information about all users (max limit if given)
-        allUsers: (parent, { limit }) => limit
+        allUsers: (_, { limit }) => limit
             ? db.prepare('SELECT * FROM users LIMIT ?').all(limit)
             : db.prepare('SELECT * FROM users').all(),
         
         // Get all information about the user with the given email
-        getUserInfo: (parent, { email }) => {
+        getUserInfo: (_, { email }) => {
             return getUserInfo(email);
         },
         
         // Update the user at the given email with given data. Non-specified info remains unchanged
-        updateUser: (parent, { email, data }) => {
+        updateUser: (_, { email, data }) => {
             if (!data) {
                 return getUserInfo(email);
             }
@@ -63,6 +63,22 @@ const resolvers = {
                 return null;
             }
         },
+
+        getSkillsFreq: (_, { filter }) => {
+            const { min_freq, max_freq } = filter;
+            const skills = db.prepare(`
+                SELECT skills.skill, COUNT(user_skills.user_id) AS freq
+                FROM user_skills
+                JOIN skills ON skills.id = user_skills.skill_id
+                GROUP BY user_skills.skill_id
+                HAVING freq BETWEEN ? AND ?
+            `).all(min_freq, max_freq);
+            
+            return skills.map(skill => ({
+                skill: skill.skill,
+                freq: skill.freq
+            }));
+        }
     },
 };
 
