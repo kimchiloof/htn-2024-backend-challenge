@@ -8,17 +8,23 @@ const resolvers = {
             ? db.prepare('SELECT * FROM users LIMIT ?').all(limit)
             : db.prepare('SELECT * FROM users').all(),
         
-        // Get sll information about the user with the given email
+        // Get all information about the user with the given email
         getUserInfo: (parent, { email }) => {
             return getUserInfo(email);
         },
         
+        // Update the user at the given email with given data. Non-specified info remains unchanged
         updateUser: (parent, { email, data }) => {
+            if (!data) {
+                return getUserInfo(email);
+            }
+            
             const updateUserTransaction = db.transaction( () => {
                 const user = getUserByEmail.get(email);
                 
                 // User does not exist, return null
                 if (!user) {
+                    console.warn(`User ${email} does not exist. Cannot update.`)
                     return null;
                 }
                 
@@ -65,6 +71,7 @@ function getUserInfo(email) {
 
     // User does not exist, return null
     if (!user) {
+        console.warn(`User ${email} does not exist.`)
         return null;
     }
 
