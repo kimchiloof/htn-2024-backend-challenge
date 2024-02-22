@@ -64,6 +64,7 @@ const resolvers = {
             }
         },
 
+        // Gets all skills with a frequency between min_freq and max_freq
         getSkillsFreq: (_, { filter }) => {
             const { min_freq, max_freq } = filter;
             const skills = db.prepare(`
@@ -78,6 +79,30 @@ const resolvers = {
                 skill: skill.skill,
                 freq: skill.freq
             }));
+        },
+        
+        // Attempts to delete the user associated with email, returns true on deletion success, false otherwise
+        deleteUser: (_, { email }) => {
+            const deleteUserTransaction = db.transaction(() => {
+                const user = getUserByEmail.get(email);
+                
+                if (!user) {
+                    console.warn(`User ${email} does not exist.`)
+                    return false;
+                }
+                
+                // Delete user and skill links
+                db.prepare(`DELETE FROM user_skills WHERE user_id = ?`).run(user.id);
+                db.prepare(`DELETE FROM users WHERE id = ?`).run(user.id);
+            })
+
+            try {
+                deleteUserTransaction();
+                return true;
+            } catch (error) {
+                console.error('Failed to delete user:', error);
+                return false;
+            }
         }
     },
 };
