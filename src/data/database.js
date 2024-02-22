@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 
 const db = new Database("database.db");
 
-export default function InitDB (reset) {
+export function InitDB (reset) {
     CreateDB();
     
     if (reset) {
@@ -11,7 +11,6 @@ export default function InitDB (reset) {
     }
     
     console.log("Database initialized!")
-    return db;
 }
 
 async function ResetData() {
@@ -99,3 +98,5 @@ function InsertUserData(user, skills) {
         }
     });
 }
+
+export default db;
