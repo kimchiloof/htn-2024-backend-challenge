@@ -12,57 +12,6 @@ const resolvers = {
         getUserInfo: (_, { email }) => {
             return getUserInfo(email);
         },
-        
-        // Update the user at the given email with given data. Non-specified info remains unchanged
-        updateUser: (_, { email, data }) => {
-            if (!data) {
-                return getUserInfo(email);
-            }
-            
-            const updateUserTransaction = db.transaction( () => {
-                const user = getUserByEmail.get(email);
-                
-                // User does not exist, return null
-                if (!user) {
-                    console.warn(`User ${email} does not exist. Cannot update.`)
-                    return null;
-                }
-                
-                db.prepare(`UPDATE users SET name = ?, company = ?, phone = ?, email = ? WHERE email = ?`).run(
-                    data.name || user.name,
-                    data.company || user.company,
-                    data.phone || user.phone, 
-                    data.email || user.email,
-                    email
-                );
-                
-                if (data.skills && data.skills.length > 0) {
-                    data.skills.forEach(skill => {
-                        db.prepare(`INSERT OR IGNORE INTO skills (skill) VALUES (?)`).run(skill.skill);
-                        const skillId = getSkillByName.get(skill.skill).id;
-                        
-                        db.prepare(`
-                            INSERT INTO user_skills (user_id, skill_id, rating)
-                            VALUES (?, ?, ?)
-                            ON CONFLICT(user_id, skill_id)
-                            DO UPDATE SET rating = excluded.rating
-                        `).run(user.id, skillId, skill.rating);
-                    })
-                }
-            });
-
-            try{
-                updateUserTransaction();
-                return getUserInfo(data.email || email);
-            } catch (error) {
-                if (error && error.message.includes("UNIQUE constraint failed: users.email")) {
-                    console.error(`Email ${data.email} already exists for another user!`)
-                }
-                
-                console.error("Failed to update user:", error);
-                return null;
-            }
-        },
 
         // Gets all skills with a frequency between min_freq and max_freq
         getSkillsFreq: (_, { filter }) => {
@@ -80,17 +29,101 @@ const resolvers = {
                 freq: skill.freq
             }));
         },
+    },
+    
+    Mutation: {
+        // Update the user at the given email with given data. Non-specified info remains unchanged
+        updateUser: (_, { email, data }) => {
+            if (!data) {
+                return getUserInfo(email);
+            }
+
+            let errors = false;
+
+            const updateUserTransaction = db.transaction( () => {
+                const user = getUserByEmail.get(email);
+
+                // User does not exist, return null
+                if (!user) {
+                    console.warn(`User ${email} does not exist. Cannot update.`)
+                    errors = true;
+                }
+
+                db.prepare(`UPDATE users SET name = ?, company = ?, phone = ?, email = ? WHERE email = ?`).run(
+                    data.name || user.name,
+                    data.company || user.company,
+                    data.phone || user.phone,
+                    data.email || user.email,
+                    email
+                );
+
+                InsertSkillsForUser(data.skills, user);
+            });
+
+            try{
+                updateUserTransaction();
+                return errors
+                    ? null
+                    : getUserInfo(data.email || email);
+            } catch (error) {
+                if (error && error.message.includes("UNIQUE constraint failed: users.email")) {
+                    console.error(`Email ${data.email} already exists for another user!`)
+                }
+
+                console.error("Failed to update user:", error);
+                return null;
+            }
+        },
         
+        // Attempts to create a user, returns the created user or null if failed
+        newUser: (_, { data }) => {
+            let errors = false;
+            
+            const newUserTransaction = db.transaction( () => {
+                const insertNewUser = db.prepare(`INSERT OR IGNORE INTO users (name, company, email, phone) VALUES (?, ?, ?, ?)`).run(
+                    data.name,
+                    data.company, 
+                    data.email, 
+                    data.phone
+                );
+                
+                if (insertNewUser.changes === 0) {
+                    console.error("Failed to insert new user");
+                    errors = true;
+                } 
+                
+                const user = getUserByEmail.get(data.email);
+
+                InsertSkillsForUser(data.skills, user);
+            });
+
+            try {
+                newUserTransaction();
+                return errors 
+                    ? null
+                    : getUserInfo(data.email);
+            } catch (error) {
+                if (error && error.message.includes("UNIQUE constraint failed: users.email")) {
+                    console.error(`Email ${data.email} already exists for another user!`)
+                }
+
+                console.error("Failed to add user:", error);
+                return null;
+            }
+        },
+
         // Attempts to delete the user associated with email, returns true on deletion success, false otherwise
         deleteUser: (_, { email }) => {
+            let errors = false;
+            
             const deleteUserTransaction = db.transaction(() => {
                 const user = getUserByEmail.get(email);
-                
+
                 if (!user) {
                     console.warn(`User ${email} does not exist.`)
-                    return false;
+                    errors = true;
                 }
-                
+
                 // Delete user and skill links
                 db.prepare(`DELETE FROM user_skills WHERE user_id = ?`).run(user.id);
                 db.prepare(`DELETE FROM users WHERE id = ?`).run(user.id);
@@ -98,14 +131,20 @@ const resolvers = {
 
             try {
                 deleteUserTransaction();
-                return true;
+                return !errors;
             } catch (error) {
                 console.error('Failed to delete user:', error);
                 return false;
             }
         }
-    },
+    }
 };
+
+export default resolvers;
+
+// =================
+// Utility functions
+// =================
 
 function getUserInfo(email) {
     const user = getUserByEmail.get(email);
@@ -131,4 +170,18 @@ function getUserInfo(email) {
     };
 }
 
-export default resolvers;
+function InsertSkillsForUser(skills, user) {
+    if (skills && skills.length > 0) {
+        skills.forEach(skill => {
+            db.prepare(`INSERT OR IGNORE INTO skills (skill) VALUES (?)`).run(skill.skill);
+            const skillId = getSkillByName.get(skill.skill).id;
+
+            db.prepare(`
+                INSERT INTO user_skills (user_id, skill_id, rating)
+                VALUES (?, ?, ?)
+                ON CONFLICT(user_id, skill_id)
+                DO UPDATE SET rating = excluded.rating
+            `).run(user.id, skillId, skill.rating);
+        })
+    }
+}
