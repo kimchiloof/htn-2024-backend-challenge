@@ -21,7 +21,7 @@ function InitDB() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         company TEXT,
-        email TEXT UNIQUE,
+        email TEXT,
         phone TEXT
     )`;
 
@@ -54,65 +54,37 @@ async function FetchData(url) {
     }
 }
 
-function InsertUserData(userData, skillData) {
-    // Insert
-    const insertUser = db.prepare(`
-        INSERT INTO users (name, company, email, phone) VALUES (?, ?, ?, ?)
-        ON CONFLICT(users.email) DO UPDATE SET
-        name = excluded.name,
-        company = excluded.company,
-        phone = excluded.phone;
-    `);
-    const insertSkill = db.prepare('INSERT OR IGNORE INTO skills (skill) VALUES (?)');
-    const insertUserSkill = db.prepare('INSERT OR IGNORE INTO user_skills (user_id, skill_id, rating) VALUES (?, ?, ?)');
-
-    // Get
-    const getSkillId = db.prepare('SELECT id FROM skills WHERE skill = ?');
+function InsertUserData(user, skills) {
+    // Inserters - Ignore duplicate entries on initial database setup
+    const insertNewUser  = db.prepare(`INSERT OR IGNORE INTO users (name, company, email, phone) VALUES (?, ?, ?, ?)`);
+    const insertNewSkill = db.prepare(`INSERT OR IGNORE INTO skills (skill) VALUES (?)`);
+    const insertNewLink  = db.prepare(`INSERT OR IGNORE INTO user_skills (user_id, skill_id, rating) VALUES (?, ?, ?)`);
     
-    // Insert user
-    try {
-        const insertUserResult = insertUser.run(userData.name, userData.company, userData.email, userData.phone);
-        const userId = insertUserResult.lastInsertRowid; // May cause errors when user is not updated
-
-        insertUserResult.changes === 0 
-            ? console.warn(`Duplicate email ${userData.email} found for ${userData.name}. Updating user data!`) // does not actually check as when duplicate and when make new both === 1
-            : console.debug(`User ${userData.name} added at row: ${userId}`);
-
-        // Skills
-        skillData.forEach(skill => {
-            try {
-                // Insert or ignore new skill
-                const insertSkillResult = insertSkill.run(skill.skill);
-                const skillId = insertSkillResult.lastInsertRowid; // May cause errors when skill is not updated
-                
-                console.debug(insertSkillResult.changes === 0 
-                    ? `Skill ${skill.skill} already declared. Ignoring!` 
-                    : `Skill ${skill.skill} added at row: ${skillId}`)
-                
-                // Add user-skill link
-                try {
-                    const userSkill = getSkillId.get(skill.skill);
-                    if (userSkill) {
-                        const insertUserSkillResult = insertUserSkill.run(userId, userSkill.id, skill.rating);
-
-                        if (insertUserSkillResult.changes === 0) {
-                            console.warn(`Duplicate skill entry ${skill.skill} for ${userData.name} found. Ignoring!`)
-                        }
-                    } else {
-                        console.error(`Failed to retrieve or insert skill: ${skill.skill}`);
-                    }
-                } catch (error) {
-                    console.error(`Error getting skill id for ${skill.skill}:`, error);
-                }
-            } catch (error) {
-                console.error(`Error inserting skill data for ${skill.skill}:`, error);
-                throw error;
-            }
-        });
-    } catch (error) {
-        console.error(`Error inserting user data for ${userData.name}:`, error);
-        throw error;
-    }
+    // ID Getters
+    const getUserByEmail = db.prepare(`SELECT id FROM users WHERE email = ?`);
+    const getSkillByName = db.prepare('SELECT id FROM skills WHERE skill = ?');
+    
+    // User
+    const newUser = insertNewUser.run(user.name, user.company, user.email, user.phone);
+    const finalUser = getUserByEmail.get(user.email);
+    newUser.changes === 0
+        ? console.warn(`Duplicate user ${user.name}. Ignoring!`)
+        : console.debug(`User ${user.name} inserted at row ${finalUser.id}.`);
+    
+    // Skills
+    skills.forEach(skill => {
+        const newSkill = insertNewSkill.run(skill.skill);
+        const finalSkill = getSkillByName.get(skill.skill);
+        newSkill.changes === 0
+            ? console.debug(`----- ${skill.skill} was previously declared.`)
+            : console.debug(`Skill ${skill.skill} inserted at row ${finalSkill.id}.`);
+        
+        // User-Skill link
+        const newUserSkillLink = insertNewLink.run(finalUser.id, finalSkill.id, skill.rating);
+        if (newUserSkillLink.changes === 0) {
+            console.warn(`Duplicate skill ${skill.skill} for ${user.name}. Ignoring!`)
+        }
+    });
 }
 
 export default db;
