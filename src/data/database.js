@@ -21,7 +21,7 @@ function InitDB() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         company TEXT,
-        email TEXT,
+        email TEXT UNIQUE, -- Users' accounts to be associated with an unique email
         phone TEXT
     )`;
 
@@ -68,8 +68,13 @@ function InsertUserData(user, skills) {
     const newUser = insertNewUser.run(user.name, user.company, user.email, user.phone);
     const finalUser = getUserByEmail.get(user.email);
     newUser.changes === 0
-        ? console.warn(`Duplicate user ${user.name}. Ignoring!`)
+        ? console.warn(`Duplicate user ${user.name} with email ${user.email}. Ignoring!`)
         : console.debug(`User ${user.name} inserted at row ${finalUser.id}.`);
+    
+    if (newUser.changes === 0) {
+        // Duplicate email, ignore new entries
+        return;
+    }
     
     // Skills
     skills.forEach(skill => {
