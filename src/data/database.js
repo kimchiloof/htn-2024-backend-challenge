@@ -1,101 +1,100 @@
-import sqlite3 from "sqlite3";
+import Database from "better-sqlite3";
 import fetch from "node-fetch";
 
-const db = new sqlite3.Database("database.db");
+const db = new Database("database.db", {verbose: console.log});
 
-async function main() {
-    const dataSource = 'https://gist.githubusercontent.com/DanielYu842/607c1ae9c63c4e83e38865797057ff8f/raw/HTN_2023_BE_Challenge_Data.json';
-    const users = await fetchData(dataSource);
+Main().catch(console.error);
 
-    db.serialize(() => {
-        db.run(`CREATE TABLE IF NOT EXISTS users(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            company TEXT,
-            email TEXT,
-            phone TEXT
-        )`);
+async function Main() {
+    InitDB();
+    const users = await FetchData("https://gist.githubusercontent.com/DanielYu842/607c1ae9c63c4e83e38865797057ff8f/raw/HTN_2023_BE_Challenge_Data.json");
 
-        db.run(`CREATE TABLE IF NOT EXISTS skills(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            skill TEXT,
-            rating INTEGER,
-            FOREIGN KEY(user_id) REFERENCES users(id)
-        )`);
-        
-        insertUserData(users)
-    })
+    for (let user of users) {
+        InsertUserData(user, user.skills);
+    }
+    
+    console.log("Database setup complete!")
 }
 
-main().then(() => {
-    console.log("Database setup and data insertion complete.");
-    // db.close(); 
-}).catch((error) => {
-    console.error("Error in main operation:", error);
-});
+function InitDB() {
+    const usersTable = `CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        company TEXT,
+        email TEXT UNIQUE,
+        phone TEXT
+    )`;
 
-async function fetchData(url) {
+    const skillsTable = `CREATE TABLE IF NOT EXISTS skills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        skill TEXT UNIQUE
+    )`;
+
+    const userSkillsTable = `CREATE TABLE IF NOT EXISTS user_skills (
+        user_id INTEGER,
+        skill_id INTEGER,
+        rating INTEGER,
+        PRIMARY KEY (user_id, skill_id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (skill_id) REFERENCES skills(id)
+    )`;
+
+    db.exec(usersTable);
+    db.exec(skillsTable);
+    db.exec(userSkillsTable);
+}
+
+async function FetchData(url) {
     try {
         const response = await fetch(url);
-        return await response.json();
+        return response.json();
     } catch (error) {
-        console.error("Error fetching users data:", error);
-        return [];
+        console.error(`Error fetching data from ${url}:`, error);
+        throw error;
     }
 }
 
-function insertUserData(users) {
-    if (users.length <= 0) return;
+function InsertUserData(userData, skillData) {
+    // Insert
+    const insertUser = db.prepare('INSERT INTO users (name, company, email, phone) VALUES (?, ?, ?, ?)');
+    const insertSkill = db.prepare('INSERT OR IGNORE INTO skills (skill) VALUES (?)');
+    const insertUserSkill = db.prepare('INSERT INTO user_skills (user_id, skill_id, rating) VALUES (?, ?, ?)');
+
+    // Get
+    const getSkillId = db.prepare('SELECT id FROM skills WHERE skill = ?');
     
-    users.forEach(async user => {
-        const userExists = await new Promise((resolve, reject) => {
-            db.get('SELECT id FROM users WHERE email = ?', [user.email], (err, row) => {
-                if (err) {
-                    reject(err);
+    try {
+        // Insert user
+        const insertUserResult = insertUser.run(userData.name, userData.company, userData.email, userData.phone);
+        const userId = insertUserResult.lastInsertRowid; 
+
+        console.log(`User ${userData.name} added at row: ${userId}`);
+
+        skillData.forEach(skill => {
+            try {
+                // Insert or ignore new skill
+                const insertSkillResult = insertSkill.run(skill.skill);
+                const skillId = insertSkillResult.lastInsertRowid;
+                
+                console.log(insertSkillResult.changes === 0 
+                    ? `Skill ${skill.skill} ignored at row: ${skillId}` 
+                    : `Skill ${skill.skill} added at row: ${skillId}`)
+                
+                // Add user-skill link
+                const userSkill = getSkillId.get(skill.skill);
+                if (userSkill) {
+                    insertUserSkill.run(userId, userSkill.id, skill.rating);
                 } else {
-                    resolve(!!row); // Resolve true if row exists, false otherwise
+                    console.error(`Failed to retrieve or insert skill: ${skill.name}`);
                 }
-            });
+            } catch (error) {
+                console.error(`Error inserting skill data for ${skill.name}:`, error);
+            }
         });
-        
-        if (userExists) {
-            // User exists, skip insertion
-            console.log(`User with email ${user.email} already exists in the database! Skipping.`)
-        } else {
-            // User does not exist, insert
-            db.run(
-                `INSERT INTO users (name, company, email, phone)
-                 VALUES (?, ?, ?, ?)`,
-                [user.name, user.company, user.email, user.phone],
-                function (err) {
-                    if (err) {
-                        return console.log(err.message);
-                    }
-
-                    console.log(`A row has been inserted with rowid ${this.lastID}`);
-                    
-                    // If there are skills, insert
-                    if (user.skills.length > 0) {
-                        user.skills.forEach(skill => {
-                            db.run(
-                                `INSERT INTO skills (user_id, skill, rating)
-                                 VALUES (?, ?, ?)`,
-                                [this.lastID, skill.skill, skill.rating],
-                                function (err) {
-                                    if (err) {
-                                        return console.log(err.message);
-                                    }
-
-                                    console.log(`A skill row has been inserted with rowid ${this.lastID}`);
-                                }
-                            );
-                        });
-                    }
-                }
-            );
-        }
-    });
+    } catch (error) {
+        console.error(`Error inserting user data for ${userData.name}:`, error);
+        throw error;
+    }
 }
 
 export default db;
