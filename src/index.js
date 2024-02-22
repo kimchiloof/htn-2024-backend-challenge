@@ -9,7 +9,7 @@ import resolvers from "./data/resolvers.js";
 import {InitDB} from "./data/database.js";
 
 // Database
-InitDB(true); // Can set reset to false when testing
+InitDB(false);
 
 // Start app
 const app = express();

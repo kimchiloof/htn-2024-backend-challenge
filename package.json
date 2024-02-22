@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "create-database": "node src/data/create-database.js"
   },
   "keywords": [],
   "author": "",
