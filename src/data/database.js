@@ -3,20 +3,28 @@ import fetch from "node-fetch";
 
 const db = new Database("database.db");
 
-Main().catch(console.error);
+export default function InitDB (reset) {
+    CreateDB();
+    
+    if (reset) {
+        ResetData().catch(console.error);
+    }
+    
+    console.log("Database initialized!")
+    return db;
+}
 
-async function Main() {
-    InitDB();
+async function ResetData() {
     const users = await FetchData("https://gist.githubusercontent.com/DanielYu842/607c1ae9c63c4e83e38865797057ff8f/raw/HTN_2023_BE_Challenge_Data.json");
 
     for (let user of users) {
         InsertUserData(user, user.skills);
     }
-    
-    console.log("Database setup complete!")
+
+    console.log("Database reset setup complete!")
 }
 
-function InitDB() {
+function CreateDB() {
     const usersTable = `CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -91,5 +99,3 @@ function InsertUserData(user, skills) {
         }
     });
 }
-
-export default db;

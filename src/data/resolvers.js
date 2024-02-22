@@ -1,4 +1,4 @@
-import db from './database.js'
+import {db} from '../index.js'
 
 const resolvers = {
     Query: {

@@ -6,7 +6,10 @@ import http from 'http';
 import cors from 'cors';
 import typeDefs from './data/schema.js';
 import resolvers from "./data/resolvers.js";
-import db from "./data/database.js";
+import InitDB from "./data/database.js";
+
+// Database
+export const db = InitDB(true); // Can set reset to false when testing
 
 // Start app
 const app = express();
