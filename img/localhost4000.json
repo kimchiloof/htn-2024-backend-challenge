@@ -1,0 +1,62 @@
+{
+  "data": {
+    "getUsers": [
+      {
+        "name": "Melissa Hooper",
+        "company": "Baker Inc",
+        "phone": "186.502.7815",
+        "email": "cheyennebrooks@example.org",
+        "skills": [
+          {
+            "skill": "Unreal Engine",
+            "rating": 4
+          },
+          {
+            "skill": "Semantic UI",
+            "rating": 3
+          },
+          {
+            "skill": "Meteor",
+            "rating": 2
+          }
+        ]
+      },
+      {
+        "name": "Sara Horn",
+        "company": "Baker Inc",
+        "phone": "485-722-3316x26219",
+        "email": "andersonrachel@example.net",
+        "skills": [
+          {
+            "skill": "Flask",
+            "rating": 3
+          },
+          {
+            "skill": "Node.js",
+            "rating": 3
+          }
+        ]
+      }
+    ],
+    "getUserInfo": {
+      "name": "Melissa Hooper"
+    },
+    "allUsers": [
+      {
+        "email": "lorettabrown@example.net"
+      },
+      {
+        "email": "frederickkyle@example.org"
+      },
+      {
+        "email": "bowmancynthia@example.net"
+      },
+      {
+        "email": "estradadana@example.org"
+      },
+      {
+        "email": "wrobinson@example.org"
+      }
+    ]
+  }
+}
