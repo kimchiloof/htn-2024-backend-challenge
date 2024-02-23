@@ -4,9 +4,26 @@ import {getSkillByName, getSkillsByUserId, getUserByEmail} from "./data-utils.js
 const resolvers = {
     Query: {
         // Get all information about all users (max limit if given)
-        allUsers: (_, { limit }) => limit
-            ? db.prepare('SELECT * FROM users LIMIT ?').all(limit)
-            : db.prepare('SELECT * FROM users').all(),
+        allUsers: (_, { limit }) => {
+            let users = limit
+                ? db.prepare('SELECT * FROM users LIMIT ?').all(limit)
+                : db.prepare('SELECT * FROM users').all();
+
+            return users.map(user => {
+                const skills = getSkillsByUserId.all(user.id).map(skill => ({
+                    skill: skill.skill,
+                    rating: skill.rating
+                }))
+
+                return {
+                    name: user.name,
+                    company: user.company,
+                    email: user.email,
+                    phone: user.phone,
+                    skills: skills
+                };
+            })
+        },
         
         // Get all information about the user with the given email
         getUserInfo: (_, { email }) => {
