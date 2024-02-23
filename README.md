@@ -1,4 +1,44 @@
-## HTN 2024 BackEnd Challenge
+# HTN 2024 BackEnd Challenge
+
+### Overview
+
+This project is a backend server designed to manage and organize hackathon participant data. Built to handle the increasing applications for our new hackathon series, it provides a robust solution for storing, retrieving, and updating participant information through a GraphQL API.
+
+### Current ideas
+- "Get Users" query can be used to allow hackers to search for other hackers based on company and desired skills during team formation.
+- "Get Skills By Frequency" query can be used to track analytics of what languages people use most, or to allow hackers to see what most people use
+
+### Potential future plans
+- Allow easy deletion of a User's Skill, as right now you can only add new or modify existing skills via "Update User" mutation (easiest implementation probably via another mutation)
+- Standardize phone numbers on input (e.g., +123 (456)-789-0000 x0000)
+- Expand on User type to include:
+  - `events: [Event]` for a list of signed in events/workshops
+  - `hardware: [Hardware]` for a list of signed out hardware
+  - Both would each require their own table and linking table
+    
+## 🧰 Built with
+
+- [Node.js](https://nodejs.org/en/)
+- [Express.js](https://expressjs.com/)
+- ApolloGraphQL's [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
+- [Better SQLite3](https://www.npmjs.com/package/better-sqlite3)
+
+## 🏗️ Build Instructions
+
+1. Clone the repository
+2. Navigate to project directory
+3. Install dependencies
+4. **Create the database** - either via `npm run create-database` or (IDE permitting) from the script in package.json
+5. Start the application
+6. Go to [http://localhost:4000/](http://localhost:4000/) to access and send requests to the server via the Apollo Server
+
+```bash
+git clone https://github.com/kimchiloof/htn-2024-backend-challenge.git
+cd htn-2024-backend-challenge
+npm install
+npm run create-database
+npm start
+```
 
 ## 🌐 API Documentation
 
@@ -44,21 +84,21 @@
   allUsers(limit: Int): [User]
   ```
 
-Example:
-```gql
-query ExampleQuery {
-  allUsers(limit: 3) {
-    name
-    company
-    email
-    phone
-    skills {
-      skill
-      rating
+  Example:
+  ```gql
+  query ExampleQuery {
+    allUsers(limit: 3) {
+      name
+      company
+      email
+      phone
+      skills {
+        skill
+        rating
+      }
     }
   }
-}
-```
+  ```
 </details>
 
 <details>
@@ -72,21 +112,21 @@ query ExampleQuery {
   getUserInfo(email: String!): User 
   ```
 
-Example:
-```gql
-query ExampleQuery {
-  getUserInfo(email: "lorettabrown@example.net") {
-    name
-    company
-    email
-    phone
-    skills {
-      skill
-      rating
+  Example:
+  ```gql
+  query ExampleQuery {
+    getUserInfo(email: "lorettabrown@example.net") {
+      name
+      company
+      email
+      phone
+      skills {
+        skill
+        rating
+      }
     }
   }
-}
-```
+  ```
 </details>
 
 <details>
@@ -117,15 +157,15 @@ query ExampleQuery {
   }
   ```
 
-Example:
-```gql
-query ExampleQuery {
-  getSkillsFreq(limit: 4, filter: {min_freq: 5}) {
-    skill
-    freq
+  Example:
+  ```gql
+  query ExampleQuery {
+    getSkillsFreq(limit: 4, filter: {min_freq: 5}) {
+      skill
+      freq
+    }
   }
-}
-```
+  ```
 </details>
 
 <details>
@@ -154,21 +194,21 @@ query ExampleQuery {
   }
   ```
 
-Example:
-```gql
-query ExampleQuery {
-  getUsers(limit: 4, company: "Jackson Ltd", skills: {skill: "Swift", max_rating: 5}) {
-    name
-    company
-    email
-    phone
-    skills {
-      skill
-      rating
+  Example:
+  ```gql
+  query ExampleQuery {
+    getUsers(limit: 4, company: "Jackson Ltd", skills: {skill: "Swift", max_rating: 5}) {
+      name
+      company
+      email
+      phone
+      skills {
+        skill
+        rating
+      }
     }
   }
-}
-```
+  ```
 </details>
 
 ### Mutations
@@ -184,21 +224,21 @@ query ExampleQuery {
   newUesr(data: User!): User
   ```
 
-Example:
-```gql
-mutation ExampleMutation {
-  newUser(data: {name: "John Doe the Third", email: "john@doethird.com", skills: [{skill: "C", rating: 2}}]) {
-    name
-    company
-    email
-    phone
-    skills {
-      rating
-      skill
+  Example:
+  ```gql
+  mutation ExampleMutation {
+    newUser(data: {name: "John Doe the Third", email: "john@doethird.com", skills: [{skill: "C", rating: 2}}]) {
+      name
+      company
+      email
+      phone
+      skills {
+        rating
+        skill
+      }
     }
   }
-}
-```
+  ```
 </details>
 
 <details>
@@ -213,21 +253,21 @@ mutation ExampleMutation {
   updateUser(email: String!, data: User): User
   ```
 
-Example:
-```gql
-mutation ExampleMutation {
-  updateUser(email: "john@doethird.com", data: {name: "John Barry", skills: [{skill: "C", rating: 4}, {skill: "Fortran", rating: 1}]}) {
-    name
-    company
-    email
-    phone
-    skills {
-      rating
-      skill
+  Example:
+  ```gql
+  mutation ExampleMutation {
+    updateUser(email: "john@doethird.com", data: {name: "John Barry", skills: [{skill: "C", rating: 4}, {skill: "Fortran", rating: 1}]}) {
+      name
+      company
+      email
+      phone
+      skills {
+        rating
+        skill
+      }
     }
   }
-}
-```
+  ```
 </details>
 
 <details>
@@ -241,33 +281,10 @@ mutation ExampleMutation {
   deleteUser(email: String!): Boolean!
   ```
 
-Example:
-```gql
-mutation ExampleMutation {
-  deleteUser(email: "john@doethirdfourth.com")
-}
-```
+  Example:
+  ```gql
+  mutation ExampleMutation {
+    deleteUser(email: "john@doethirdfourth.com")
+  }
+  ```
 </details>
-
-## 🧰 Built with
-
-- [Node.js](https://nodejs.org/en/)
-- [Express.js](https://expressjs.com/)
-- ApolloGraphQL's [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
-- [Better SQLite3](https://www.npmjs.com/package/better-sqlite3)
-
-## 🏗️ Build Instructions
-
-1. Clone the repository
-2. Navigate to project directory
-3. Install dependencies
-4. **Create the database** - either via `npm run create-database` or (IDE permitting) from the script in package.json
-5. Start the application
-
-```bash
-git clone https://github.com/kimchiloof/htn-2024-backend-challenge.git
-cd htn-2024-backend-challenge
-npm install
-npm run create-database
-npm start
-```
