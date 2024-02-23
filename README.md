@@ -2,6 +2,8 @@
 
 ![Apollo Server on LocalHost4000](https://github.com/kimchiloof/htn-2024-backend-challenge/blob/main/img/localhost4000.png)
 
+See the response JSON data for the above request [here](https://github.com/kimchiloof/htn-2024-backend-challenge/blob/main/img/localhost4000.json) or [here](https://github.com/kimchiloof/htn-2024-backend-challenge/blob/main/img/localhost4000json.png)
+
 ### Overview
 
 This project is a backend server designed to manage and organize hackathon participant data. Built to handle the increasing applications for our new hackathon series, it provides a robust solution for storing, retrieving, and updating participant information through a GraphQL API.
