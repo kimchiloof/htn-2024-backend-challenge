@@ -1,6 +1,6 @@
 ## HTN 2024 BackEnd Challenge
 
-## API Documentation
+## 🌐 API Documentation
 
 <details>
   <summary>Main Types</summary>
@@ -43,6 +43,22 @@
   # - returns: a list of all User in the database
   allUsers(limit: Int): [User]
   ```
+
+Example:
+```gql
+query ExampleQuery {
+  allUsers(limit: 3) {
+    name
+    company
+    email
+    phone
+    skills {
+      skill
+      rating
+    }
+  }
+}
+```
 </details>
 
 <details>
@@ -55,6 +71,22 @@
   # - returns: the corresponding User or null
   getUserInfo(email: String!): User 
   ```
+
+Example:
+```gql
+query ExampleQuery {
+  getUserInfo(email: "lorettabrown@example.net") {
+    name
+    company
+    email
+    phone
+    skills {
+      skill
+      rating
+    }
+  }
+}
+```
 </details>
 
 <details>
@@ -64,17 +96,9 @@
   ```gql
   # getSkillsFreq
   # - limit: the maximum number of responses
-  # - filter: specified range for requested skills
+  # - filter (required): specified range for requested skills
   # - returns: a list of all skills and their frequencies that match the given filter
   getSkillsFreq(limit: Int, filter: SkillFreqQuery!): [SkillFreq]
-
-  # SkillFreq
-  # - skill (required): the name of this skill
-  # - freq (required): the number of users who have this skill
-  type SkillFreq {
-      skill: String!,
-      freq: Int!
-  }
 
   # SkillFreqQuery
   # - min_freq: the minimum frequency a skill can have to match, inclusive
@@ -83,7 +107,25 @@
       min_freq: Int,
       max_freq: Int
   }
+
+  # SkillFreq
+  # - skill (required): the name of this skill
+  # - freq (required): the number of users who have this skill
+  type SkillFreq {
+      skill: String!,
+      freq: Int!
+  }
   ```
+
+Example:
+```gql
+query ExampleQuery {
+  getSkillsFreq(limit: 4, filter: {min_freq: 5}) {
+    skill
+    freq
+  }
+}
+```
 </details>
 
 <details>
@@ -111,6 +153,22 @@
       max_rating: Int
   }
   ```
+
+Example:
+```gql
+query ExampleQuery {
+  getUsers(limit: 4, company: "Jackson Ltd", skills: {skill: "Swift", max_rating: 5}) {
+    name
+    company
+    email
+    phone
+    skills {
+      skill
+      rating
+    }
+  }
+}
+```
 </details>
 
 ### Mutations
@@ -125,6 +183,22 @@
   # - returns: the inserted user, or null if failed
   newUesr(data: User!): User
   ```
+
+Example:
+```gql
+mutation ExampleMutation {
+  newUser(data: {name: "John Doe the Third", email: "john@doethird.com", skills: [{skill: "C", rating: 2}}]) {
+    name
+    company
+    email
+    phone
+    skills {
+      rating
+      skill
+    }
+  }
+}
+```
 </details>
 
 <details>
@@ -138,6 +212,22 @@
   # - returns: the edited user, or null if not found
   updateUser(email: String!, data: User): User
   ```
+
+Example:
+```gql
+mutation ExampleMutation {
+  updateUser(email: "john@doethird.com", data: {name: "John Barry", skills: [{skill: "C", rating: 4}, {skill: "Fortran", rating: 1}]}) {
+    name
+    company
+    email
+    phone
+    skills {
+      rating
+      skill
+    }
+  }
+}
+```
 </details>
 
 <details>
@@ -150,6 +240,13 @@
   # - returns: the success value of the deletion (true/false)
   deleteUser(email: String!): Boolean!
   ```
+
+Example:
+```gql
+mutation ExampleMutation {
+  deleteUser(email: "john@doethirdfourth.com")
+}
+```
 </details>
 
 ## 🧰 Built with
