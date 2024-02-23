@@ -4,6 +4,8 @@
 
 This project is a backend server designed to manage and organize hackathon participant data. Built to handle the increasing applications for our new hackathon series, it provides a robust solution for storing, retrieving, and updating participant information through a GraphQL API.
 
+See API documentation [here](https://github.com/kimchiloof/htn-2024-backend-challenge/blob/main/README.md#-api-documentation)
+
 ### Current ideas
 - "Get Users" query can be used to allow hackers to search for other hackers based on company and desired skills during team formation.
 - "Get Skills By Frequency" query can be used to track analytics of what languages people use most, or to allow hackers to see what most people use
